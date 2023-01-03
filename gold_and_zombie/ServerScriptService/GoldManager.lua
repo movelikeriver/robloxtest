@@ -6,9 +6,8 @@ local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 
 local goldChunksFolder = workspace:WaitForChild("GoldChunks")
-
 local eventsFolder = ReplicatedStorage.Events
-local uiEvent = eventsFolder.UIEvent
+
 local goldStore = DataStoreService:GetDataStore("PlayerGold")
 local random = Random.new()
 
@@ -42,8 +41,7 @@ local function processGoldTouch(chunk, chunkValue, player)
 	local uiValue = playerGold[playerUserID] or 0
 	print("touch: ", playerUserID, uiValue)
 	player:SetAttribute("GoldValue", uiValue)
-	
-	uiEvent:FireClient(player, {gold = uiValue, doTween = true, showAlert = false})
+	eventsFolder.UIEvent:FireClient(player, {gold = uiValue, doTween = true, showAlert = false})
 
 	-- Regenerate gold chunk after delay
 	wait(GOLD_REGEN_DELAY)

@@ -1,6 +1,8 @@
 -- ServerScriptService/SetupPoints.lua
 
+
 local Players = game:GetService("Players")
+
 
 local function onCharacterAdded(character, player)
 	player:SetAttribute("IsAlive", true)

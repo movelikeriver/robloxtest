@@ -1,4 +1,4 @@
---ServerScriptService/GameTime.lua
+-- ServerScriptService/GameTime.lua
 
 local gamerunning = game.ServerStorage.GameRunning
 gamerunning = false
@@ -13,3 +13,4 @@ while gamerunning == true do
 		gametime = 0
 	end
 end
+

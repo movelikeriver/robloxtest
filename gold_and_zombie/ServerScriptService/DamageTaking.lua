@@ -1,4 +1,4 @@
---ServerScriptService/DamageTaking.lua
+-- ServerScriptService/DamageTaking.lua
 
 local rs = game:GetService("ReplicatedStorage")
 local clickEvent = rs:WaitForChild("ClickEvent")
