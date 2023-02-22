@@ -1,162 +1,164 @@
 // http://www.usaco.org/index.php?page=viewproblem2&cpid=1157
 //
-// dynamic program
-// [3, 4, 6] means 3 for 1-turn, 4 for 2-turn, 6 for 3-turn
+// dynamic program, similar as: m[i][j] = m[i+1][j] + m[i][j+1]
+// but use m.first, m.second to represent the direction (down, right),
+// if direction changes, the turn++.
+// 
+// [0, 3, 4, 6] means 3 for 1-turn, 4 for 2-turn, 6 for 3-turn
 // merge the first + [0, ... second] if with one turn.
 //
-// ([], []),   ([1], []),        ([1], []),                   ([1], []) 
-// ([], [1]), ([1], [1]),      ([1,1], [1]),              ([1,2], [1])
-// ([], [1]), ([1], [1,1]),   ([1,1,1], [1,1,1])      H
-// ([], [1]), ([1], [1,2]),   ([1,1,2], [1,2,2,1]),  ([1,2,4,2,1], []),  
-
+// so, (m[i][j].first, m[i][j].second) =
+//     (merge(m[i][j+1].first, m[i][j+1].second),
+//      merge(m[i+1][j].second, m[i+1][j].first))
 
 #include <iostream>
 #include <string>
 #include <vector>
 #include <utility>
-
 using namespace std;
 
-void print_map(const vector<string>& m) {
-  for (int i = 0; i < m.size(); i++) {
-    cout << m[i] << endl;
+
+void print_roads(const vector<string>& roads) {
+  for (int i = 0; i < roads.size(); i++) {
+    cout << roads[i] << endl;
   }
-  cout << endl;
 }
 
-void print_vec(const vector<int>& v) {
+void print_vec(const vector<int>& vec) {
   cout << "[";
-  for (int elem : v) {
+  for (auto elem : vec) {
     cout << elem << ",";
   }
   cout << "]";
 }
 
-void print_ret_map(const vector<vector<pair<vector<int>, vector<int>>>>& ret) {
-  for (int i = 0; i < ret.size(); i++) {
-    for (int j = 0; j < ret[i].size(); j++) {
-      auto curr = ret[i][j];
+void print_pairs(const vector<vector<pair<vector<int>, vector<int>>>>& resp) {
+  for (int i = 0; i < resp.size(); i++) {
+    for (int j = 0; j < resp[i].size(); j++) {
+      auto cur = resp[i][j];
       cout << "(";
-      print_vec(curr.first);
+      print_vec(cur.first);
       cout << ", ";
-      print_vec(curr.second);
-      cout << ")\t| ";
+      print_vec(cur.second);
+      cout << ")\t|";
     }
     cout << endl;
   }
 }
-			 
 
 vector<int> merge(const vector<int>& same, const vector<int>& turn, int k) {
+  // [0, 2], [10, 11] ==> [0, 12, 11]
   vector<int> ret;
-  for (int i = 0; i < same.size(); i++) {
-    ret.push_back(same[i]);
+  for (auto elem : same) {
+    ret.push_back(elem);
   }
-  for (int j = 0; j < turn.size(); j++) {
-    if (j >= k) {
-      // turn at most k times
-      break;
-    }
-    if (j+1 < ret.size()) {
-      ret[j+1] += turn[j];
+  for (int i = 0; i < turn.size(); i++) {
+    if (i+1 > k) break;
+
+    if (i+1 < same.size()) {
+      ret[i+1] += turn[i];
     } else {
-      ret.push_back(turn[j]);
+      ret.push_back(turn[i]);
     }
   }
-  return move(ret);
+  return ret;
 }
 
-int route(const vector<string>& m, int k) {
-  int size = m.size();
-  //
-  //                            ([1,1,1], [1,1,1])
-  // ([], [1]), ([1], [1,2]),   ([1,1,2], [1,2,2,1])
-
-  vector<vector<pair<vector<int>, vector<int>>>> ret;
-  for (int i = 0; i < size; i++) {
+int route(const vector<string>& roads, int k) {
+  // a a         a          ([0], [1])
+  // a a         a          ([0], [1])
+  // a a  ([0, 1], [0, 1])  ([0], [1])
+  // a a  ([1], [0])        ([ ], [ ])
+  vector<vector<pair<vector<int>, vector<int>>>> resp;
+  for (int i = 0; i < roads.size(); i++) {
     vector<pair<vector<int>, vector<int>>> row;
-    for (int j = 0; j < size; j++) {
+    for (int j = 0; j < roads[i].size(); j++) {
       row.push_back(make_pair(vector<int>(), vector<int>()));
     }
-    ret.push_back(row);
+    resp.push_back(row);
   }
   
-  //                       | ([], [1])
-  //                       | ([], [1])
-  // ([1], []) | ([1], []) | ([], [ ])
-  int a = (m[size-1][size-2] == '.') ? 1 : 0;
-  ret[size-1][size-2].first.push_back(a);
+  int size = resp.size();
+  // last row
+  int a = roads[size-1][size-2] == '.' ? 1 : 0;
+  resp[size-1][size-2].first.push_back(a);
+  resp[size-1][size-2].second.push_back(0);
+  
+  for (int j = size-3; j >= 0; j--) {
+    if (roads[size-1][j] == '.') {
+      for (auto elem : resp[size-1][j+1].first) {
+	resp[size-1][j].first.push_back(elem);
+      }
+    } else {
+      resp[size-1][j].first.push_back(0);
+    }
+    resp[size-1][j].second.push_back(0);
+  }
 
-  a = (m[size-2][size-1] == '.') ? 1 : 0;
-  ret[size-2][size-1].second.push_back(a);
+  // last col
+  a = roads[size-2][size-1] == '.' ? 1 : 0;
+  resp[size-2][size-1].second.push_back(a);
+  resp[size-2][size-1].first.push_back(0);
 
   for (int i = size-3; i >= 0; i--) {
-    if (m[i][size-1] == '.') {
-      for (auto elem : ret[i+1][size-1].second) {
-	ret[i][size-1].second.push_back(elem);
+    if (roads[i][size-1] == '.') {
+      for (auto elem : resp[i+1][size-1].second) {
+	resp[i][size-1].second.push_back(elem);
       }
     } else {
-      ret[i][size-1].second.push_back(0);
+      resp[i][size-1].second.push_back(0);
     }
-  }
-  for (int j = size-3; j >= 0; j--) {
-    if (m[size-1][j] == '.') {
-      for (auto elem : ret[size-1][j+1].first) {
-	ret[size-1][j].first.push_back(elem);
-      }
-    } else {
-      ret[size-1][j].first.push_back(0);
-    }
+    resp[i][size-1].first.push_back(0);
   }
 
-  for (int i = ret.size()-2; i >= 0; i--) {
-    for (int j = ret[i].size()-2; j >= 0; j--) {
-      if (m[i][j] == '.') {
-	vector<int> x = merge(ret[i+1][j].first, ret[i+1][j].second, k);
-	vector<int> y = merge(ret[i][j+1].second, ret[i][j+1].first, k);
-	ret[i][j] = make_pair(x, y);
+  for (int i = size-2; i >= 0; i--) {
+    for (int j = size-2; j >= 0; j--) {
+      if (roads[i][j] == '.') {
+	vector<int> y = merge(resp[i+1][j].second, resp[i+1][j].first, k);
+	vector<int> x = merge(resp[i][j+1].first, resp[i][j+1].second, k);
+	resp[i][j] = make_pair(x, y);
       } else {
-	// remember to set ([0], [0])
-	ret[i][j].first.push_back(0);
-	ret[i][j].second.push_back(0);
+	resp[i][j].first.push_back(0);
+	resp[i][j].second.push_back(0);
       }
     }
   }
-
-  //print_ret_map(ret);
-
-  int r = 0;
-  for (int i = 0; i < k; i++) {
-    auto v = ret[0][0];
-    if (i < v.first.size()) {
-      r += v.first[i];
-    }
-    if (i < v.second.size()) {
-      r += v.second[i];
-    }
-  }
-  return r;
-}
   
+  //  print_pairs(resp);
+
+  int ret = 0;
+  auto v = resp[0][0];
+  for (int i = 0; i < v.first.size(); i++) {
+    if (i > k) break;
+
+    ret += v.first[i];
+  }
+  for (int i = 0; i < v.second.size(); i++) {
+    if (i > k) break;
+
+    ret += v.second[i];
+  }
+  
+  return ret;
+}
 
 int main() {
-  int n;
-  cin >> n;
-  for (int i = 0; i < n; i++) {
-    int size, k;
-    cin >> size >> k;
-    vector<string> m;  // map
-    for (int j = 0; j < size; j++) {
-      string s;
-      cin >> s;
-      m.push_back(s);
+  int n_case;
+  cin >> n_case;
+  for (int i = 0; i < n_case; i++) {
+    int n, k;
+    cin >> n >> k;
+    vector<string> roads;
+    for (int j = 0; j < n; j++) {
+      string row;
+      cin >> row;
+      roads.push_back(row);
     }
 
-    //if (i != 7) continue;
-    //cout << size << ", " << k << endl;
-    //print_map(m);
+    // print_roads(roads);
+    // cout << endl;
 
-    int r = route(m, k);
-    cout << r << endl;
+    int ret = route(roads, k);
+    cout << ret << endl;
   }
 }
